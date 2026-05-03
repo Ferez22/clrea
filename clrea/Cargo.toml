@@ -2,6 +2,21 @@
 name = "clrea"
 version = "0.1.0"
 edition = "2024"
+authors = ["Fares Aouani Cherif"]
+description = "Shell helper that catches mistyped clear/ls/cd and asks 'did you mean ...?' before running"
+repository = "https://github.com/faresaouani/clrea"
+homepage = "https://github.com/faresaouani/clrea"
+license = "MIT OR Apache-2.0"
+readme = "../README.md"
+keywords = ["cli", "shell", "typo", "zsh", "bash"]
+categories = ["command-line-utilities"]
+include = [
+    "src/**/*.rs",
+    "assets/rules.toml",
+    "shell/clrea.zsh",
+    "shell/clrea.bash",
+    "Cargo.toml",
+]
 
 [[bin]]
 name = "clreactl"
