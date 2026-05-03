@@ -1,47 +1,56 @@
-## Getting Started
+# clrea
 
-most common mistake in the terminal? writing the word `clear`:
+A tiny shell helper that catches mistyped `clear`, `ls`, and `cd` in zsh/bash,
+and asks you "did you mean ...?" — one keypress to confirm, any other key to
+cancel. Nothing runs without your confirmation.
 
-- lea
-- lr
-- clrea
-- l
-- and the list is looong
+```
+$ clrea
+🔴 clrea: did you mean clear ?  [⏎ confirm · ⎋ cancel]
+⚪ → clear
+```
 
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+It learns from your typos over time (history is recorded), but it always asks
+before doing anything. Only `clear`, `ls`, `cd` can ever be auto-run — that
+list is hard-coded.
 
-## Test locally
+---
 
-Phase 1 CLI: corrects mistyped `clear`, `ls`, `cd`. First time prompts "did you mean ...?", remembers your confirmation, auto-corrects next time. You always press Enter — nothing runs on its own.
+## Requirements
 
-> The CLI binary is named **`clreactl`** (not `clrea`) so the typo `clrea` stays free for the shell hook to catch.
+- Rust toolchain (1.85+ for Edition 2024) — install with:
+  ```sh
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+  ```
+- zsh or bash
 
-### 1. Build
+---
+
+## Build
 
 ```sh
 cd clrea
 cargo build --release
 ```
 
-Binary lands at `clrea/target/release/clreactl`.
+Binary: `clrea/target/release/clreactl`.
 
-### 2. Put `clreactl` on your PATH
+> The CLI binary is named **`clreactl`** (control), not `clrea`, so the typo
+> `clrea` stays free for the shell hook to catch.
 
-Pick one:
+---
+
+## Install
+
+Put `clreactl` somewhere on your `PATH`:
 
 ```sh
 # option A — symlink into ~/.local/bin (make sure it's on PATH)
 mkdir -p ~/.local/bin
 ln -sf "$PWD/target/release/clreactl" ~/.local/bin/clreactl
 
-# option B — export the build dir for this shell only
+# option B — only for the current shell
 export PATH="$PWD/target/release:$PATH"
-```
-
-If you previously symlinked an old `clrea` binary, remove it now:
-
-```sh
-rm -f ~/.local/bin/clrea
 ```
 
 Verify:
@@ -51,70 +60,41 @@ which clreactl
 clreactl --version
 ```
 
-### 3. Sanity-check the binary (no shell hook yet)
+Then load the shell hook. Pick zsh or bash:
 
 ```sh
-clreactl suggest clrea     # prints: ask<TAB>clear   (exit 1)
-clreactl suggest sl        # prints: ask<TAB>ls      (exit 1)
-clreactl suggest hello     # prints nothing          (exit 2 = unknown)
-```
-
-### 4. Try the zsh hook in an isolated subshell first
-
-This avoids touching your `.zshrc` until you're happy.
-
-```sh
-zsh -f                                # fresh zsh, no rc loaded
-export PATH="$HOME/.local/bin:$PATH"  # so clreactl is found
+# zsh — add to ~/.zshrc
 eval "$(clreactl init zsh)"
 
-clrea                           # → "did you mean 'clear'?" — press Enter
-clrea                           # second time → auto-corrects to clear
-sl                              # → "did you mean 'ls'?" — press Enter
-cdd                             # → "did you mean 'cd'?" — press Enter
-
-exit                            # leave the subshell
-```
-
-Inspect what got learned:
-
-```sh
-cat ~/.config/clrea/history.toml
-```
-
-To reject a suggestion: type any character (e.g. `n`) before pressing Enter. Nothing is learned, nothing runs.
-
-#### If zsh asks "correct 'clera' to 'clrea'?" instead of clrea hooking in
-
-That's zsh's built-in spell-correct (`setopt correct`) firing before `command_not_found_handler`. The shell hook disables it on load (`unsetopt correct correct_all`). If your prompt framework re-enables it, add this to your `.zshrc` _after_ the `eval` line:
-
-```sh
-unsetopt correct correct_all
-```
-
-### 5. Persist across all new shells
-
-Once it behaves, append this to `~/.zshrc`:
-
-```sh
-eval "$(clreactl init zsh)"
+# bash — add to ~/.bashrc
+eval "$(clreactl init bash)"
 ```
 
 Reload:
 
 ```sh
-source ~/.zshrc
+source ~/.zshrc   # or ~/.bashrc
 ```
 
-Bash users: same idea with `~/.bashrc` and `clreactl init bash`.
+---
 
-### 6. Reset learned history
+## Usage
 
-```sh
-rm ~/.config/clrea/history.toml
+Just type. When you mistype:
+
+```
+$ clrea
+🔴 clrea: did you mean clear ?  [⏎ confirm · ⎋ cancel]
 ```
 
-### 7. Add your own typo rules
+- **Enter** → runs `clear`, records the mapping.
+- **Any other key** (Esc, `n`, `q`, …) → cancels, nothing runs, nothing learned.
+
+Built-in rules cover common typos: `clrea`, `claer`, `clera`, `cler`, `sl`,
+`lss`, `dc`, `cdd`, etc. Anything within edit-distance 2 of `clear`/`ls`/`cd`
+also matches.
+
+### Add your own typos
 
 Create `~/.config/clrea/rules.toml`:
 
@@ -128,23 +108,102 @@ typos = ["clr"]
 
 User rules merge with the built-in defaults.
 
-### Safety
+### Inspect or reset learned history
 
-- Only `clear`, `ls`, `cd` can ever be auto-run — hard-coded whitelist.
-- `clreactl` never executes anything by itself; the shell hook waits for your Enter.
-- `clreactl learn <typo> <cmd>` rejects `ny `cmd` outside the whitelist.
+```sh
+cat   ~/.config/clrea/history.toml                               # Linux
+cat   "$HOME/Library/Application Support/clrea/history.toml"     # macOS
 
-after making changes:
-Re-test steps:
+rm    ~/.config/clrea/history.toml      # forget everything
+```
+
+---
+
+## Test it locally before adding to your shell rc
+
+Best to try in a clean subshell first.
+
+### 1. Sanity-check the binary
+
+```sh
+clreactl suggest clrea     # → ask<TAB>clear   (exit 1)
+clreactl suggest sl        # → ask<TAB>ls      (exit 1)
+clreactl suggest hello     # → empty           (exit 2)
+```
+
+### 2. Try the hook in an isolated zsh
+
+```sh
+zsh -f                                # fresh zsh, no rc loaded
+export PATH="$HOME/.local/bin:$PATH"
+eval "$(clreactl init zsh)"
+
+clrea          # → "did you mean 'clear'?" → press Enter
+clera          # → same
+sl             # → "did you mean 'ls'?"
+cdd            # → "did you mean 'cd'?"
+exit
+```
+
+If zsh shows `correct 'clera' to 'clrea'?` instead of clrea's prompt, your
+prompt framework (Oh-My-Zsh, Powerlevel10k, …) re-enabled `setopt correct`.
+The hook disables it on load, but if it comes back, add this **after** the
+`eval` line in your `.zshrc`:
+
+```sh
+unsetopt correct correct_all
+```
+
+### 3. Persist
+
+When happy, leave the `eval "$(clreactl init zsh)"` line in your `.zshrc`.
+
+---
+
+## Develop
+
+### Run tests
+
+```sh
+cargo test
+```
+
+### Project layout
 
 ```
-cargo build --release
-rm -f ~/.local/bin/clrea
-ln -sf "$PWD/target/release/clreactl" ~/.local/bin/clreactl
-  zsh -f
-  export PATH="$HOME/.local/bin:$PATH"
-  eval "$(clreactl init zsh)"
-clrea # should prompt "did you mean 'clear'?"
-clera # same
-sl # → ls
+clrea/
+├── Cargo.toml              # bin = "clreactl"
+├── assets/rules.toml       # built-in typo rules
+├── shell/
+│   ├── clrea.zsh           # zsh hook
+│   └── clrea.bash          # bash hook
+└── src/
+    ├── main.rs             # clap subcommands
+    ├── suggest.rs          # dispatch logic
+    ├── rules.rs            # rule loading + Levenshtein fallback
+    └── history.rs          # learned-mappings storage
 ```
+
+### Subcommands
+
+```
+clreactl suggest <typo>     # prints "ask\t<correct>" or nothing
+clreactl learn <typo> <cmd> # records mapping; <cmd> must be in whitelist
+clreactl init <shell>       # prints the shell hook (zsh|bash)
+```
+
+---
+
+## Safety
+
+- **Whitelist:** only `clear`, `ls`, `cd` can ever be executed by the hook.
+  Hard-coded in `src/suggest.rs`.
+- **Always asks:** the hook never executes anything until you press Enter.
+- **`learn` is guarded:** `clreactl learn foo rm` is rejected — you cannot
+  poison the history file with arbitrary commands.
+
+---
+
+## License
+
+TBD.
