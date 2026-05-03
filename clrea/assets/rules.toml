@@ -1,0 +1,8 @@
+[clear]
+typos = ["clrea", "claer", "clera", "cler", "clar", "clearr"]
+
+[ls]
+typos = ["sl", "lss", "lx", "lz"]
+
+[cd]
+typos = ["dc", "cdd", "ccd"]
