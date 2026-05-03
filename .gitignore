@@ -1,0 +1,59 @@
+# Rust
+/target/
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Backup files
+*.bak
+*.backup
+*.tmp
+
+# Debug builds
+**/target/debug/
+**/target/release/
+
+# Rust analyzer
+/rust-analyzer/
+
+# Test output
+**/target/test/
+
+# Documentation
+**/target/doc/
+
+# Examples
+**/target/examples/
+
+# Benchmarks
+**/target/bench/
+
+# Profiling data
+*.profraw
+*.profdata
+
+# Local configuration
+.env
+.env.local
+.env.*.local
+
+# Coverage reports
+tarpaulin-report.html
+cobertura.xml
+lcov.info
+
+# Temporary files
+*.tmp
+*.temp
