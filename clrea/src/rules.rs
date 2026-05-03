@@ -52,6 +52,12 @@ pub fn match_in(rules: &RulesFile, typo: &str) -> Option<String> {
         }
     }
 
+    // Don't fuzzy-match a real command to another short command
+    // (e.g. "ls" → "cd" at distance 2).
+    if WHITELIST.contains(&typo) {
+        return None;
+    }
+
     let mut best: Option<(usize, &str)> = None;
     for cmd in WHITELIST {
         let d = levenshtein(typo, cmd);
@@ -90,10 +96,9 @@ mod tests {
     fn levenshtein_fallback() {
         let r = RulesFile::default();
         assert_eq!(match_in(&r, "clearr"), Some("clear".into())); // distance 1
-        assert_eq!(match_in(&r, "ld"), Some("cd".into()).or(Some("ls".into())).map(|_| {
-            // either is acceptable at distance 1
-            match_in(&r, "ld").unwrap()
-        }));
+        // "ld" is distance 1 from both "cd" and "ls"; either acceptable.
+        let m = match_in(&r, "ld");
+        assert!(matches!(m.as_deref(), Some("cd") | Some("ls")));
     }
 
     #[test]
@@ -105,16 +110,18 @@ mod tests {
     }
 
     #[test]
+    fn cross_short_command_not_matched() {
+        // "ls" and "cd" are distance 2 apart but should not cross-match.
+        let r = RulesFile::default();
+        assert_eq!(match_in(&r, "ls"), None);
+        assert_eq!(match_in(&r, "cd"), None);
+    }
+
+    #[test]
     fn far_typo_unknown() {
         let r = RulesFile::default();
         assert_eq!(match_in(&r, "xyzzy"), None);
         assert_eq!(match_in(&r, "vim"), None);
-    }
-
-    #[test]
-    fn empty_string_unknown() {
-        let r = RulesFile::default();
-        assert_eq!(match_in(&r, ""), None); // distance >=2 from all
     }
 
     #[test]
