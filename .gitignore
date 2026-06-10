@@ -1,6 +1,7 @@
 # Rust
 /target/
-Cargo.lock
+# Cargo.lock is committed: this is a binary crate, lockfile gives reproducible
+# builds (and `cargo build --locked` in CI/release needs it).
 
 # IDE
 .vscode/
