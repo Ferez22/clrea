@@ -16,6 +16,31 @@ list is hard-coded.
 
 ---
 
+## Install with Homebrew
+
+```sh
+brew install Ferez22/clrea/clrea
+```
+
+Then enable the shell hook by adding ONE of these to your shell rc file:
+
+```sh
+# zsh — add to ~/.zshrc
+eval "$(clreactl init zsh)"
+
+# bash — add to ~/.bashrc
+eval "$(clreactl init bash)"
+```
+
+Restart your shell (or `source` the rc file). Done.
+
+> The binary is named **`clreactl`**, not `clrea` — typing `clrea` stays free
+> for the shell hook to catch.
+
+To build from source instead, read on.
+
+---
+
 ## Requirements
 
 - Rust toolchain (1.85+ for Edition 2024) — install with:
@@ -206,4 +231,13 @@ clreactl init <shell>       # prints the shell hook (zsh|bash)
 
 ## License
 
-TBD.
+Licensed under either of
+
+- MIT License ([LICENSE-MIT](LICENSE-MIT))
+- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE))
+
+at your option.
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
+dual licensed as above, without any additional terms or conditions.
