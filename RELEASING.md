@@ -1,6 +1,8 @@
 # Releasing clrea
 
-Steps to cut a release and update the Homebrew tap.
+Distribution is via **prebuilt binaries** attached to a GitHub Release. The
+Homebrew formula downloads those binaries directly, so users never pull the
+Rust/LLVM toolchain.
 
 ## 1. Tag the release
 
@@ -11,31 +13,37 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-GitHub auto-generates a source tarball for any tag at:
+Pushing a `v*` tag triggers `.github/workflows/release.yml`, which:
 
-```
-https://github.com/Ferez22/clrea/archive/refs/tags/v0.1.0.tar.gz
-```
+- builds `clreactl` for macOS arm64/x86_64 and Linux arm64/x86_64,
+- packages each as `clreactl-<target>.tar.gz`,
+- uploads each tarball plus a matching `.tar.gz.sha256` to the GitHub Release.
 
-(Optionally also create a GitHub Release from the tag for nicer notes.)
+Wait for that workflow to finish (Actions tab).
 
-## 2. Compute the tarball SHA-256
-
-```sh
-curl -sL https://github.com/Ferez22/clrea/archive/refs/tags/v0.1.0.tar.gz | shasum -a 256
-```
-
-## 3. Update the Homebrew tap
+## 2. Update the Homebrew tap
 
 The tap lives in a separate repo: **`Ferez22/homebrew-clrea`**
 (formula at `Formula/clrea.rb`).
 
-For a new release, update in `Formula/clrea.rb`:
+For each new release, in `Formula/clrea.rb`:
 
-- `url` — point at the new tag tarball
-- `sha256` — the value from step 2
+- bump `version`,
+- update the four `url` lines to the new tag,
+- replace each `sha256` with the value from the matching `*.sha256` asset.
 
-Commit and push the tap repo. Users get the update with `brew upgrade clrea`.
+Grab all four checksums at once:
+
+```sh
+v=v0.1.0
+for t in aarch64-apple-darwin x86_64-apple-darwin \
+         aarch64-unknown-linux-gnu x86_64-unknown-linux-gnu; do
+  echo "$t:"
+  curl -sL "https://github.com/Ferez22/clrea/releases/download/$v/clreactl-$t.tar.gz.sha256"
+done
+```
+
+Commit and push the tap repo. Users update with `brew upgrade clrea`.
 
 ## First-time tap setup
 
